@@ -6,11 +6,6 @@
    Written by Jack Lucchetti and Artur Tarassow
 */
 
-
-#clear
-set verbose off
-
-
 function matrix q(scalar k, scalar n)
     matrix ret = {}
     if k == 0
@@ -168,8 +163,8 @@ function string stringprint (matrix M,
         loop j=1..rows(M) -q
             eval M[j,1]
             if M[j,1] == 1
-                sprintf stmp "d_%s(-%d) ", vname, $j
-                vnameY+=stmp
+                string stmp = sprintf("d_%s(-%d) ", vname, $j)
+                vnameY += stmp
             endif
         endloop
     endif
@@ -182,11 +177,11 @@ function string stringprint (matrix M,
             loop j=1..rows(M) -q
                 if M[j,1+i] == 1
                     if inlist(UX,vname)
-                        sprintf stmp "%s(-%d) ", vname, $j
+                        string stmp = sprintf("%s(-%d) ", vname, $j)
                     else
-                        sprintf stmp "d_%s(-%d) ", vname, $j
+                        string stmp = sprintf("d_%s(-%d) ", vname, $j)
                     endif
-                    vnameX+=stmp
+                    vnameX += stmp
                 endif
             endloop
         endif
@@ -197,49 +192,3 @@ function string stringprint (matrix M,
 
     return STR
 end function
-
-#=====================================================================
-
-scalar runEX = 1
-
-if runEX
-
-    include criteria.gfn			# Load Allin's "criteria" pckg
-    open AWM.gdt --quiet
-
-    smpl 1980:1 1997:4
-    list X = dataset
-    yer = ln(YER)		# real gdp
-    cons = ln(PCR)		# real priv. consumption
-    stn = STN			# short-term interest rate
-    m3 = M3R				# m3
-    wln = WLN			# wealth
-    gln = GLN_YEN
-
-    delete X
-
-    # Set up an ECM
-    scalar pmx = 2
-    d_yer = diff(yer)
-    list X = stn m3 wln cons		 	# Level I(1) regressors
-    list dX = diff(X)
-    list UX = gln				# Additional unrestricted I(0) vars
-    list l_UX = lags(pmx, UX)
-    list DET = const			# Deterministics
-
-    # Select for all X the same max. lag order
-    matrix maxlags = diag( pmx*I(1+nelem(X)+nelem(UX)))
-    scalar infotype = 1				# Criteria selection: 1=AIC, 2=BIC, 3 =HQC
-    scalar opt_contemp = 0			# works only for opt_contemp atm!
-
-    BARDL = ardl_lageselect(yer, X, DET, UX, maxlags, infotype, opt_contemp)
-    matrix E = BARDL.P
-    matrix infocrit = BARDL.crit
-    matrix porder = BARDL.porder
-    string strOPT = BARDL.VSTR
-    #list selreg = BARDL.selreg
-    print porder
-    # Estimate the optimal model
-    ols diff(yer) DET yer(-1) X(-1) @strOPT
-
-endif
